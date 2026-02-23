@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
+import { setSentryUser, clearSentryUser, captureException, addSentryBreadcrumb } from '@/lib/sentry';
 
 let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -51,6 +52,14 @@ export function useAuth() {
         
         if (isMounted) {
           setUser(session?.user ?? null);
+          
+          // Set user in Sentry if authenticated
+          if (session?.user) {
+            setSentryUser(session.user.id, session.user.email)
+            addSentryBreadcrumb('User authenticated', 'auth', 'info', { userId: session.user.id })
+          } else {
+            clearSentryUser()
+          }
         }
 
         // Listen for auth changes
@@ -59,6 +68,15 @@ export function useAuth() {
             console.log('[v0] useAuth: Auth state changed, event:', event, 'user:', session?.user?.id);
             if (isMounted) {
               setUser(session?.user ?? null);
+              
+              // Update Sentry user context
+              if (session?.user) {
+                setSentryUser(session.user.id, session.user.email)
+                addSentryBreadcrumb('Auth state changed', 'auth', 'info', { event, userId: session.user.id })
+              } else {
+                clearSentryUser()
+                addSentryBreadcrumb('User logged out', 'auth', 'info')
+              }
             }
           }
         );
@@ -72,6 +90,7 @@ export function useAuth() {
         };
       } catch (error) {
         console.error('[v0] useAuth: Initialization error:', error);
+        captureException(error, { context: 'useAuth initialization' })
         if (isMounted) {
           setUser(null);
           setLoading(false);
