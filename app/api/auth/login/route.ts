@@ -39,19 +39,32 @@ export async function POST(request: Request) {
       }
     }
 
+    console.log('[v0] Attempting sign-in for:', email)
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
+      console.error('[v0] Sign-in error:', error.message)
       return NextResponse.json({ error: error.message }, { status: 401 })
     }
 
-    return NextResponse.json(
+    if (!data.session) {
+      console.error('[v0] No session returned after sign-in')
+      return NextResponse.json({ error: 'No session created' }, { status: 401 })
+    }
+
+    console.log('[v0] Sign-in successful for user:', data.user?.id)
+
+    const response = NextResponse.json(
       { message: 'Login successful', user: data.user, session: data.session },
       { status: 200 }
     )
+
+    // Session cookies are automatically set by Supabase, but ensure they're persisted
+    return response
   } catch (error) {
     console.error('[v0] Login error:', error)
     return NextResponse.json(
