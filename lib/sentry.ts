@@ -17,16 +17,6 @@ export function initializeSentry() {
     environment: process.env.NODE_ENV,
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     debug: process.env.NODE_ENV === 'development',
-    integrations: [
-      new Sentry.Replay({
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-    // Capture Replay for 10% of all sessions,
-    // plus 100% of sessions with an error
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
   })
 }
 
