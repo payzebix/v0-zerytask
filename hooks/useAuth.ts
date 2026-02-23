@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
+import { setSentryUser, clearSentryUser, captureException, addSentryBreadcrumb } from '@/lib/sentry';
 
 let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -38,17 +39,44 @@ export function useAuth() {
       try {
         const supabase = getSupabaseClient();
         
+        console.log('[v0] useAuth: Initializing session...')
+        
         // Get current session
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('[v0] useAuth: Error getting session:', sessionError.message);
+        } else {
+          console.log('[v0] useAuth: Session retrieved, user:', session?.user?.id);
+        }
+        
         if (isMounted) {
           setUser(session?.user ?? null);
+          
+          // Set user in Sentry if authenticated
+          if (session?.user) {
+            setSentryUser(session.user.id, session.user.email)
+            addSentryBreadcrumb('User authenticated', 'auth', 'info', { userId: session.user.id })
+          } else {
+            clearSentryUser()
+          }
         }
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
+          (event, session) => {
+            console.log('[v0] useAuth: Auth state changed, event:', event, 'user:', session?.user?.id);
             if (isMounted) {
               setUser(session?.user ?? null);
+              
+              // Update Sentry user context
+              if (session?.user) {
+                setSentryUser(session.user.id, session.user.email)
+                addSentryBreadcrumb('Auth state changed', 'auth', 'info', { event, userId: session.user.id })
+              } else {
+                clearSentryUser()
+                addSentryBreadcrumb('User logged out', 'auth', 'info')
+              }
             }
           }
         );
@@ -61,7 +89,8 @@ export function useAuth() {
           subscription?.unsubscribe();
         };
       } catch (error) {
-        console.log('[v0] Auth initialization error:', error);
+        console.error('[v0] useAuth: Initialization error:', error);
+        captureException(error, { context: 'useAuth initialization' })
         if (isMounted) {
           setUser(null);
           setLoading(false);

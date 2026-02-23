@@ -1,29 +1,43 @@
-import { put } from '@vercel/blob'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 /**
- * Upload file to Vercel Blob storage
+ * Upload file to Supabase Storage
  * @param file - File to upload
- * @param prefix - Folder prefix (e.g., 'missions', 'avatars')
+ * @param bucket - Bucket name (mission-images, user-avatars, submission-proofs)
  * @returns URL of uploaded file
  */
-export async function uploadToBlob(
+export async function uploadToSupabaseStorage(
   file: File,
-  prefix: string = 'uploads'
+  bucket: 'mission-images' | 'user-avatars' | 'submission-proofs' = 'mission-images'
 ): Promise<string> {
   try {
+    const supabase = createClientComponentClient()
+    
     const timestamp = Date.now()
     const randomStr = Math.random().toString(36).substring(7)
-    const filename = `${prefix}/${timestamp}-${randomStr}-${file.name}`
+    const filename = `${timestamp}-${randomStr}-${file.name}`
 
-    const response = await put(filename, file, {
-      access: 'public',
-      addRandomSuffix: false,
-    })
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(filename, file, {
+        cacheControl: '3600',
+        upsert: false,
+      })
 
-    console.log('[v0] File uploaded to Blob:', response.url)
-    return response.url
+    if (error) {
+      console.error('[v0] Supabase Storage upload error:', error)
+      throw error
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(data.path)
+
+    console.log('[v0] File uploaded to Supabase Storage:', publicUrl)
+    return publicUrl
   } catch (error) {
-    console.error('[v0] Blob upload error:', error)
+    console.error('[v0] Storage upload error:', error)
     throw new Error(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
@@ -32,21 +46,21 @@ export async function uploadToBlob(
  * Upload mission logo
  */
 export async function uploadMissionLogo(file: File): Promise<string> {
-  return uploadToBlob(file, 'missions/logos')
+  return uploadToSupabaseStorage(file, 'mission-images')
 }
 
 /**
  * Upload user avatar
  */
 export async function uploadUserAvatar(file: File): Promise<string> {
-  return uploadToBlob(file, 'users/avatars')
+  return uploadToSupabaseStorage(file, 'user-avatars')
 }
 
 /**
  * Upload submission proof image
  */
 export async function uploadSubmissionProof(file: File): Promise<string> {
-  return uploadToBlob(file, 'submissions/proofs')
+  return uploadToSupabaseStorage(file, 'submission-proofs')
 }
 
 /**
