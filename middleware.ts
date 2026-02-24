@@ -6,6 +6,8 @@ import { type NextRequest, NextResponse } from 'next/server'
  * This middleware never crashes and never blocks requests.
  * It gracefully handles missing environment variables and
  * silently continues on any error.
+ * 
+ * Last updated: 2025-02-24 (force rebuild)
  */
 
 export function middleware(request: NextRequest) {
