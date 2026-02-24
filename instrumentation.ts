@@ -1,9 +1,9 @@
 import { initializeSentry } from '@/lib/sentry'
 
-// Initialize Sentry for error tracking
+// Initialize Sentry for error tracking (only called once)
 initializeSentry()
 
 export async function register() {
   // Any additional initialization can be done here
-  console.log('[v0] Instrumentation initialized')
+  // Note: Sentry is already initialized above, no need to log again
 }
