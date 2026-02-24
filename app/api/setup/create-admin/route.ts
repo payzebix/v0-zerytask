@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getSetupSupabaseClient } from '@/lib/supabase-setup'
 import { generateInvitationCode } from '@/lib/code-generator'
 import { NextResponse } from 'next/server'
 
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = getSetupSupabaseClient()
 
     // Check if an admin invitation code already exists
     const { data: existingCodes, error: checkError } = await supabase

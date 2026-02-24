@@ -53,7 +53,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - /setup (setup route doesn't need session management)
+     * - /api/setup (setup API routes don't need auth middleware)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.svg).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.svg|setup|api/setup).*)',
   ],
 }
