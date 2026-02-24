@@ -58,9 +58,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - /api/setup (setup API routes, these handle env validation themselves)
-     * - /setup (setup page, doesn't need session)
+     * - /api/setup/* (setup API routes)
+     * - /setup* (setup pages)
+     * This uses negative lookahead to exclude these paths from middleware
      */
-    '/((?!_next/static|_next/image|favicon\\.ico|api/setup|setup).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|^/api/setup|^/setup).*)',
   ],
 }

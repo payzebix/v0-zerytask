@@ -185,7 +185,8 @@ export async function POST(request: Request) {
     }
 
     // Create user record with admin status if it's the admin email
-    // Referral code will be NULL until user generates it manually in /referrals
+    // NOTE: A trigger on auth.users should automatically create this record
+    // But we also attempt it here for redundancy
     const isAdmin = email === 'remgoficial@gmail.com'
     const { error: userError } = await supabase
       .from('users')
@@ -203,31 +204,37 @@ export async function POST(request: Request) {
       })
 
     if (userError) {
-      console.error('[v0] User creation error:', userError)
-      // Check if it's a duplicate key error (user already exists)
-      if (userError.code !== '23505') {
-        // For other errors (like password_hash issues), retry with empty hash
-        console.log('[v0] Retrying user creation with empty password_hash')
-        const { error: retryError } = await supabase
+      console.error('[v0] User creation error:', {
+        code: userError.code,
+        message: userError.message,
+        details: userError.details,
+        hint: userError.hint,
+      })
+      
+      // If it's a duplicate key error, the trigger likely already created the record
+      // This is expected and not an error
+      if (userError.code === '23505') {
+        console.log('[v0] User record already exists (created by trigger)')
+        // Try to update with additional data if needed
+        const { error: updateError } = await supabase
           .from('users')
-          .insert({
-            id: authData.user.id,
-            email,
-            password_hash: '', // Use empty hash as fallback
-            username: username || email.split('@')[0],
-            is_admin: isAdmin,
-            xp_balance: 0,
-            zeryt_balance: 0,
-            current_level: 1,
-            referral_code: null,
+          .update({
             referred_by: referrerId,
+            password_hash: passwordHash,
           })
+          .eq('id', authData.user.id)
         
-        if (retryError) {
-          console.error('[v0] User creation retry failed:', retryError)
-          // Still don't fail signup - user was created in Supabase auth
+        if (updateError) {
+          console.warn('[v0] Could not update user record:', updateError.message)
         }
+      } else {
+        // For other errors, log but don't fail signup
+        // User was created in auth, so they can still log in
+        console.warn('[v0] User database record could not be fully created, but auth user was created')
       }
+    } else {
+      // User record created successfully via API
+      console.log('[v0] User record created successfully via signup API')
     }
 
     // Create referral record if user was referred
