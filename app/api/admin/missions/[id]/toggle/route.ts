@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { getAdminSupabaseClient } from '@/lib/supabase-admin'
+import { isValidUUID, invalidUUIDResponse } from '@/lib/uuid-validator'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -9,6 +10,16 @@ export async function POST(
 ) {
   try {
     const { id } = await params
+
+    // Validate mission ID is a valid UUID
+    if (!isValidUUID(id)) {
+      const response = invalidUUIDResponse('Mission ID')
+      return NextResponse.json(
+        { error: response.error },
+        { status: response.status }
+      )
+    }
+
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,6 +74,13 @@ export async function POST(
     if (error) {
       console.error('[v0] Toggle mission error:', error)
       return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    if (!mission) {
+      return NextResponse.json(
+        { error: 'Mission not found' },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json(mission)

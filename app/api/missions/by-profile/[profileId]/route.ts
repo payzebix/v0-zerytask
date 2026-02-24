@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { isValidUUID, invalidUUIDResponse } from '@/lib/uuid-validator'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -7,6 +8,15 @@ export async function GET(
   { params }: { params: { profileId: string } }
 ) {
   try {
+    // Validate profile ID is a valid UUID
+    if (!isValidUUID(params.profileId)) {
+      const response = invalidUUIDResponse('Profile ID')
+      return NextResponse.json(
+        { error: response.error },
+        { status: response.status }
+      )
+    }
+
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

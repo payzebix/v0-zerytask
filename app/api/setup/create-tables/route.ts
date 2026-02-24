@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getSetupSupabaseClient } from '@/lib/supabase-setup'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = getSetupSupabaseClient()
     console.log('[v0] Setting up database tables...')
 
     // Check and create app_settings table if it doesn't exist

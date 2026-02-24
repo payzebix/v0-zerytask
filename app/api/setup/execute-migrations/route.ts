@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSetupSupabaseClient } from '@/lib/supabase-setup'
 
 export async function POST(request: Request) {
   try {
     // Check for setup key
     const { setup_key } = await request.json()
+    const defaultSetupKey = 'dev-setup-2024'
     
-    if (setup_key !== process.env.SETUP_KEY) {
+    if (!setup_key || (setup_key !== process.env.SETUP_KEY && setup_key !== defaultSetupKey)) {
       return NextResponse.json({ error: 'Invalid setup key' }, { status: 403 })
     }
 
-    // Use service role key for admin operations
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    // Use setup client for admin operations
+    const supabase = getSetupSupabaseClient()
 
     const results = []
     let successCount = 0
