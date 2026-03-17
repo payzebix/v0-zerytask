@@ -54,12 +54,11 @@ export async function POST(request: Request) {
       .insert({
         code: referralCode,
         created_by: user.id,
-        code_type: 'user', // Mark as user-generated
         status: 'active',
         max_uses: 3, // User codes can only invite 3 people
         current_uses: 0,
         is_used: false,
-        week_reset_date: new Date().toISOString(), // Track week for resets
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days expiration
       })
       .select()
 
