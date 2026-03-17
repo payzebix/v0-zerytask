@@ -3,9 +3,12 @@ import { NextResponse, NextRequest } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params - Next.js 16 requirement
+    const { id } = await params
+
     const supabase = await createServerSupabaseClient()
     
     const { data: { user } } = await supabase.auth.getUser()
@@ -24,7 +27,7 @@ export async function POST(
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
 
-    const missionId = params.id
+    const missionId = id
     const body = await request.json()
 
     const { data: verification, error } = await supabase
@@ -61,12 +64,15 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params - Next.js 16 requirement
+    const { id } = await params
+
     const supabase = await createServerSupabaseClient()
     
-    const missionId = params.id
+    const missionId = id
 
     const { data: verifications, error } = await supabase
       .from('mission_verifications')

@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ name: string }> }
 ) {
   try {
     // Await params - Next.js 16 requirement
-    const { id } = await params
+    const { name } = await params
 
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -32,14 +32,18 @@ export async function GET(
       }
     )
 
+    // Decode the name from URL
+    const decodedName = decodeURIComponent(name)
+    console.log('[v0] Fetching profile by name:', decodedName)
+
     const { data, error } = await supabase
       .from('mission_profiles')
       .select('id, name, description, logo_url')
-      .eq('id', id)
+      .ilike('name', decodedName)
       .maybeSingle()
 
     if (error) {
-      console.error('[v0] Error fetching mission profile:', error)
+      console.error('[v0] Error fetching mission profile by name:', error)
       return NextResponse.json(
         { error: 'Error fetching profile', details: error.message },
         { status: 500 }
@@ -47,7 +51,7 @@ export async function GET(
     }
 
     if (!data) {
-      console.log('[v0] Profile not found for ID:', id)
+      console.log('[v0] Profile not found for name:', decodedName)
       return NextResponse.json(
         { error: 'Profile not found' },
         { status: 404 }
@@ -57,7 +61,7 @@ export async function GET(
     console.log('[v0] Fetched profile:', data.id, data.name)
     return NextResponse.json(data)
   } catch (error) {
-    console.error('[v0] Mission profile GET error:', error)
+    console.error('[v0] Mission profile by-name GET error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

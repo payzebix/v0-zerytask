@@ -211,7 +211,7 @@ export default function HomePage() {
                 {profiles.slice(0, 6).map((profile) => (
                   <Link
                     key={profile.id}
-                    href={`/missions/profile/${profile.id}`}
+                    href={`/${encodeURIComponent(profile.name)}`}
                     className="group bg-card rounded-xl border border-border p-4 hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
                   >
                     {/* Icon */}
