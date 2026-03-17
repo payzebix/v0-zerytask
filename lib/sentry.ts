@@ -18,6 +18,14 @@ export function initializeSentry() {
     release: process.env.SENTRY_RELEASE || '1.0.0',
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     debug: process.env.NODE_ENV === 'development',
+    // Disable problematic integrations that cause timing issues
+    integrations: (integrations) => {
+      return integrations.filter((integration) => {
+        // Remove integrations that cause timing conflicts
+        const name = integration.name || ''
+        return !['Http', 'Modules'].includes(name)
+      })
+    },
   })
 }
 
