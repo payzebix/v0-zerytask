@@ -35,23 +35,26 @@ export async function GET() {
     // Get user details for each referral
     const enrichedReferrals = await Promise.all(
       (referrals || []).map(async (ref: any) => {
+        // Try both column names since schema might have referred_user_id instead
+        const userId = ref.referred_user_id || ref.referral_user_id
+        
         const { data: referredUser } = await supabase
           .from('users')
           .select('id, username, email, current_level')
-          .eq('id', ref.referral_user_id)
+          .eq('id', userId)
           .maybeSingle()
 
         // Count missions completed by this user
         const { count: missionsCount } = await supabase
           .from('mission_submissions')
           .select('id', { count: 'exact', head: true })
-          .eq('user_id', ref.referral_user_id)
+          .eq('user_id', userId)
           .eq('status', 'verified')
 
         return {
           id: ref.id,
           referrer_id: ref.referrer_id,
-          referred_user_id: ref.referral_user_id,
+          referred_user_id: userId,
           status: ref.status,
           created_at: ref.created_at,
           code_used: null,

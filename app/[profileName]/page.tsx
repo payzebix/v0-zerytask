@@ -166,19 +166,19 @@ export default function ProfileMissionsPage() {
       {/* Profile Info */}
       {profile && (
         <div className="px-4 py-6 bg-card/50 border-b border-border">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-start gap-3 mb-4">
             {profile.logo_url ? (
               <img
                 src={profile.logo_url}
                 alt={profile.name}
-                className="w-16 h-16 rounded-lg object-cover"
+                className="w-12 h-12 flex-shrink-0 rounded-xl object-cover"
               />
             ) : (
-              <div className="w-16 h-16 rounded-lg bg-muted" />
+              <div className="w-12 h-12 flex-shrink-0 rounded-xl bg-muted" />
             )}
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-foreground mb-1">{profile.name}</h2>
-              <p className="text-sm text-muted-foreground">{profile.description}</p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-foreground mb-1 truncate">{profile.name}</h2>
+              <p className="text-sm text-muted-foreground line-clamp-2">{profile.description}</p>
             </div>
           </div>
         </div>

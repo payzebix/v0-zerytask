@@ -3,7 +3,7 @@
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Navigation } from '@/components/Navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Upload, Check } from 'lucide-react'
 import useSWR from 'swr'
 import { useEffect, useState } from 'react'
 import { getMissionStatus } from '@/lib/mission-status'
@@ -33,6 +33,9 @@ export default function MissionDetailPage() {
   const { user, loading: authLoading } = useAuth()
   const [isAdmin, setIsAdmin] = useState(false)
   const [missionId, setMissionId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submissionUrl, setSubmissionUrl] = useState('')
+  const [submissionError, setSubmissionError] = useState('')
 
   useEffect(() => {
     if (params && params.missionId) {
@@ -90,6 +93,45 @@ export default function MissionDetailPage() {
     mission.end_time,
     mission.completion_status
   )
+
+  const handleSubmitMission = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmissionError('')
+    
+    if (!submissionUrl.trim()) {
+      setSubmissionError('Please provide proof of mission completion')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch('/api/missions/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mission_id: missionId,
+          user_id: user?.id,
+          submission_data: { proof_url: submissionUrl },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setSubmissionError(data.error || 'Failed to submit mission')
+        return
+      }
+
+      // Success - show confirmation
+      setSubmissionUrl('')
+      alert('Mission submitted for verification!')
+      // Optionally refetch mission data
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : 'Submission failed')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -173,11 +215,42 @@ export default function MissionDetailPage() {
           </div>
         </div>
 
-        {/* CTA Button */}
+        {/* Mission Submission Form */}
         {missionStatus.state === 'available' && mission.completion_status === 'not_started' && (
-          <button className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:bg-primary/90 transition">
-            Start Mission
-          </button>
+          <form onSubmit={handleSubmitMission} className="space-y-4 bg-card border border-border rounded-lg p-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {mission.verification_type === 'manual' ? 'Proof of Completion' : 'Submission URL'}
+              </label>
+              <input
+                type="text"
+                placeholder={mission.verification_type === 'manual' ? 'Paste link/screenshot URL' : 'https://example.com/proof'}
+                value={submissionUrl}
+                onChange={(e) => setSubmissionUrl(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            {submissionError && (
+              <p className="text-red-500 text-sm">{submissionError}</p>
+            )}
+            <button
+              type="submit"
+              disabled={isSubmitting || !submissionUrl.trim()}
+              className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:bg-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Upload size={18} />
+                  Submit Mission
+                </>
+              )}
+            </button>
+          </form>
         )}
         {missionStatus.state === 'locked' && (
           <button disabled className="w-full bg-muted text-muted-foreground font-bold py-3 rounded-lg opacity-60 cursor-not-allowed">
@@ -185,13 +258,15 @@ export default function MissionDetailPage() {
           </button>
         )}
         {mission.completion_status === 'pending_review' && (
-          <button disabled className="w-full bg-yellow-500/20 text-yellow-700 font-bold py-3 rounded-lg">
+          <button disabled className="w-full bg-yellow-500/20 text-yellow-700 font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+            <Clock size={18} />
             Pending Review
           </button>
         )}
-        {missionStatus.state === 'completed' || mission.completion_status === 'completed' && (
-          <button disabled className="w-full bg-accent/20 text-accent font-bold py-3 rounded-lg">
-            ✓ Completed
+        {(missionStatus.state === 'completed' || mission.completion_status === 'completed') && (
+          <button disabled className="w-full bg-accent/20 text-accent font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+            <Check size={18} />
+            Completed
           </button>
         )}
       </div>
