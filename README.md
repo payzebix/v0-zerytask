@@ -1,6 +1,22 @@
-# ZeryT - Web3 Missions Platform
+# Zerytask - Web3 Missions Platform
 
-A comprehensive Web3 missions application similar to Galxe.com and Zealy.io, where users complete tasks to earn XP and ZeryT tokens.
+A comprehensive Web3 missions application where users complete tasks to earn XP and ZeryT tokens. Built on Next.js 16 with Supabase.
+
+**Status:** ✅ Production-Ready (v1.0 - Last Audited: 2025-02-24)
+
+## 📚 Documentation
+
+**Start here:** [ZERYTASK_REFERENCE.md](./ZERYTASK_REFERENCE.md) - Central reference guide
+- Complete project structure
+- API endpoints
+- Main workflows
+- Debugging guide
+
+**Full Audit:** [COMPREHENSIVE_AUDIT_2025.md](./COMPREHENSIVE_AUDIT_2025.md) - Detailed analysis
+- Database analysis
+- API route audit
+- Security review
+- Recommendations
 
 ## Features
 
