@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { NextResponse, NextRequest } from 'next/server'
 
+// Force rebuild: v2 - Fixed ambiguous foreign key (2025-02-24T13:30:00Z)
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
@@ -25,11 +26,12 @@ export async function GET(request: NextRequest) {
     console.log('[v0] Admin fetching pending verifications')
 
     // Get pending verifications with user and mission info
+    // Must specify which foreign key to use since there are two user relationships
     const { data: pending, error: fetchError } = await supabase
       .from('mission_verifications_pending')
       .select(`
         *,
-        user:users(id, username, email),
+        submitter:users!mission_verifications_pending_user_id_fkey(id, username, email),
         mission:missions(id, title)
       `)
       .eq('status', 'pending')
@@ -44,7 +46,13 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('[v0] Found pending verifications:', pending?.length || 0)
-    return NextResponse.json({ verifications: pending || [] })
+    // Rename submitter back to user for client compatibility
+    const verifications = (pending || []).map(v => ({
+      ...v,
+      user: v.submitter,
+      submitter: undefined
+    }))
+    return NextResponse.json({ verifications })
   } catch (error) {
     console.error('[v0] Error fetching pending verifications:', error)
     return NextResponse.json(
