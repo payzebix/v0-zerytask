@@ -1,19 +1,34 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { isValidUUID, invalidUUIDResponse } from '@/lib/uuid-validator'
 import { NextResponse, NextRequest } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params - Next.js 16 requirement
+    const { id } = await params
+
+    // Validate mission ID
+    if (!isValidUUID(id)) {
+      const response = invalidUUIDResponse('Mission ID')
+      return NextResponse.json(
+        { error: response.error },
+        { status: response.status }
+      )
+    }
+
     const supabase = await createServerSupabaseClient()
     
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
+      console.log('[v0] Mission verify: Unauthorized access attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const missionId = params.id
+    console.log('[v0] Mission verify attempt:', { missionId: id, userId: user.id })
+    const missionId = id
     const body = await request.json()
     const { verification_type, submitted_data } = body
 
