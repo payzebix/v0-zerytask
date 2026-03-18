@@ -62,7 +62,18 @@ export default function AdminReferralsPage() {
     isAdmin && user ? '/api/referrals/config' : null,
     fetcher,
     {
-      onSuccess: (data) => setFormData(data)
+      onSuccess: (data) => {
+        if (data) {
+          setFormData({
+            xp_reward: data.xp_reward ?? 5000,
+            zeryt_reward: data.zeryt_reward ?? 250,
+            usdc_reward: data.usdc_reward ?? 50,
+            min_level_requirement: data.min_level_requirement ?? 3,
+            min_missions_requirement: data.min_missions_requirement ?? 5,
+            multiplier: data.multiplier ?? 1.0,
+          })
+        }
+      }
     }
   )
 
