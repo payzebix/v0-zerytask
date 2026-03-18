@@ -80,7 +80,7 @@ export default function MissionsPage() {
             {profiles.map((profile) => (
               <div
                 key={profile.id}
-                onClick={() => router.push(`/missions/profile/${profile.id}`)}
+                onClick={() => router.push(`/${encodeURIComponent(profile.name)}`)}
                 className="block bg-card border border-border hover:border-primary/50 rounded-xl p-4 transition group cursor-pointer hover:bg-card/80"
               >
                 <div className="flex items-start justify-between gap-4">

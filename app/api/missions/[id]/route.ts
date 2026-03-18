@@ -1,10 +1,22 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { NextResponse } from 'next/server'
+import { isValidUUID, invalidUUIDResponse } from '@/lib/uuid-validator'
+import { NextResponse, NextRequest } from 'next/server'
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Await params - Next.js 16 requirement
+    const { id } = await params
+
+    // Validate mission ID is a valid UUID
+    if (!isValidUUID(id)) {
+      const response = invalidUUIDResponse('Mission ID')
+      return NextResponse.json(
+        { error: response.error },
+        { status: response.status }
+      )
+    }
+
     const supabase = await createServerSupabaseClient()
-    const { id } = params
 
     // Fetch mission
     const { data: mission, error: missionError } = await supabase

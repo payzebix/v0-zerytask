@@ -1,18 +1,22 @@
+import { getAdminSupabaseClient } from '@/lib/supabase-admin'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { captureException, addSentryBreadcrumb } from '@/lib/sentry'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
     console.log('[v0] Upload API called')
     
-    const supabase = await createServerSupabaseClient()
+    // Use regular client for auth check
+    const supabaseAuth = await createServerSupabaseClient()
     
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
     if (userError || !user) {
       console.error('[v0] Auth error:', userError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Use admin client for storage operations (bypasses RLS on storage buckets)
+    const supabase = getAdminSupabaseClient()
 
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -83,7 +87,6 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(data.path)
 
     console.log('[v0] Image uploaded successfully:', publicUrl)
-    addSentryBreadcrumb('Image uploaded successfully', 'upload', 'info', { bucket, filename: uniqueFilename })
 
     return NextResponse.json(
       { 
@@ -97,12 +100,6 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error('[v0] Upload error:', error)
-    captureException(error, { 
-      context: 'file upload',
-      userId: 'unknown',
-      bucket,
-      filename: file?.name
-    })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Upload failed' },
       { status: 500 }

@@ -197,6 +197,12 @@ export default function AdminDashboard() {
             Mission
           </Link>
           <Link
+            href="/admin/customization"
+            className="bg-slate-800/50 border border-slate-700 hover:border-purple-500 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+          >
+            🎨 Customize
+          </Link>
+          <Link
             href="/admin/social-networks"
             className="bg-slate-800/50 border border-slate-700 hover:border-teal-500 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
           >

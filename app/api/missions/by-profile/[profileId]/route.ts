@@ -5,11 +5,14 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { profileId: string } }
+  { params }: { params: Promise<{ profileId: string }> }
 ) {
   try {
+    // Await params - Next.js 16 requirement
+    const { profileId } = await params
+
     // Validate profile ID is a valid UUID
-    if (!isValidUUID(params.profileId)) {
+    if (!isValidUUID(profileId)) {
       const response = invalidUUIDResponse('Profile ID')
       return NextResponse.json(
         { error: response.error },
@@ -39,12 +42,12 @@ export async function GET(
       }
     )
 
-    console.log('[v0] Fetching missions for profile:', params.profileId)
+    console.log('[v0] Fetching missions for profile:', profileId)
 
     const { data, error } = await supabase
       .from('missions')
       .select('*')
-      .eq('mission_profile_id', params.profileId)
+      .eq('mission_profile_id', profileId)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -55,7 +58,7 @@ export async function GET(
       )
     }
 
-    console.log('[v0] Found missions:', data?.length || 0, 'for profile:', params.profileId)
+    console.log('[v0] Found missions:', data?.length || 0, 'for profile:', profileId)
 
     // Enrich missions with social network logos if available
     const enrichedMissions = await Promise.all(
