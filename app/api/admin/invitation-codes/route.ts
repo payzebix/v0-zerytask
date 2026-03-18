@@ -1,35 +1,22 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getAdminSupabaseClient } from '@/lib/supabase-admin'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { generateInvitationCode } from '@/lib/code-generator'
 
+// Force rebuild: 2025-02-24T12:00:00Z
 export async function GET(request: Request) {
-  const cookieStore = await cookies()
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll() {},
-      },
-    }
-  )
-
   try {
-    // Get current user to verify admin status
+    // Use regular client to verify current user
+    const supabaseAuth = await createServerSupabaseClient()
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabaseAuth.auth.getUser()
 
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if user is admin
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseAuth
       .from('users')
       .select('is_admin')
       .eq('id', user.id)
@@ -39,7 +26,8 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Forbidden: Only admins can access this' }, { status: 403 })
     }
 
-    // Get all invitation codes
+    // Use admin client to fetch codes
+    const supabase = getAdminSupabaseClient()
     const { data, error } = await supabase
       .from('invitation_codes')
       .select('*')
@@ -55,44 +43,32 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies()
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll() {},
-      },
-    }
-  )
-
   try {
-    const { quantity, expires_in_days } = await request.json()
-
-    // Get current user
+    // Use regular client to verify current user
+    const supabaseAuth = await createServerSupabaseClient()
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabaseAuth.auth.getUser()
 
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if user is admin
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseAuth
       .from('users')
-      .select('id')
+      .select('is_admin')
       .eq('id', user.id)
-      .eq('is_admin', true)
       .single()
 
-    if (!userData) {
+    if (!userData?.is_admin) {
       return Response.json({ error: 'Forbidden: Only admins can create codes' }, { status: 403 })
     }
+
+    // Use admin client for creating codes
+    const supabase = getAdminSupabaseClient()
+
+    const { quantity, expires_in_days } = await request.json()
 
     // Generate invitation codes (8 alphanumeric characters each)
     const codes = []
