@@ -95,18 +95,17 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle()
 
-    // Update customization
+    // Upsert customization (insert if not exists, update if exists)
     const { data, error } = await supabase
       .from('site_customization')
-      .update({
+      .upsert({
+        id: current?.id || undefined, // Keep same ID if updating, generate new if inserting
         ...body,
         previous_version: current || null,
         version_number: (current?.version_number || 0) + 1,
         last_updated_by: user.id,
         updated_at: new Date().toISOString(),
-      })
-      .order('created_at', { ascending: false })
-      .limit(1)
+      }, { onConflict: 'id' })
       .select()
       .single()
 
