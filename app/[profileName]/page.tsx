@@ -156,6 +156,67 @@ export default function ProfileMissionsPage() {
     return () => clearInterval(interval)
   }, [filteredMissions])
 
+  // Render individual mission card
+  const renderMissionCard = (mission: Mission) => {
+    const status = getMissionStatus(
+      mission.start_date,
+      mission.start_time,
+      mission.end_date,
+      mission.end_time,
+      mission.completion_status
+    )
+
+    const statusIcon = status.state === 'completed' ? (
+      <Check size={16} className="text-green-500" />
+    ) : status.state === 'locked' ? (
+      <Lock size={16} className="text-muted-foreground" />
+    ) : status.state === 'in_progress' ? (
+      <Clock size={16} className="text-yellow-500" />
+    ) : null
+
+    const statusText = status.state === 'completed' ? 'Completed' : status.state === 'locked' ? 'Locked' : status.state === 'in_progress' ? 'Ending soon' : ''
+
+    return (
+      <div
+        key={mission.id}
+        onClick={() => router.push(`/${encodeURIComponent(profile?.name || '')  }/${mission.id}`)}
+        className="bg-card border border-border hover:border-primary/50 rounded-xl p-3 transition cursor-pointer hover:bg-card/80 group"
+      >
+        <div className="flex gap-2 items-start">
+          {mission.image_url && (
+            <img 
+              src={mission.image_url} 
+              alt="mission logo"
+              className="h-6 w-6 rounded object-cover flex-shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none'
+              }}
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-foreground text-sm group-hover:text-primary transition truncate">{mission.title}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-1">{mission.description}</p>
+            <div className="flex gap-2 mt-2 text-xs">
+              <span className="bg-primary/10 text-primary px-2 py-1 rounded">+{mission.xp_reward} XP</span>
+              {mission.zeryt_reward > 0 && (
+                <span className="bg-accent/10 text-accent px-2 py-1 rounded">${mission.zeryt_reward}</span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            {statusIcon && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {statusIcon}
+                <span>{statusText}</span>
+              </div>
+            )}
+            <ChevronRight size={16} className="text-muted-foreground group-hover:text-primary transition" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (authLoading || !user || !profileName) {
     return (
       <div className="min-h-screen bg-background pb-24 flex items-center justify-center">
