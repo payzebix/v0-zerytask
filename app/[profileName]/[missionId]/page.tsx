@@ -215,10 +215,11 @@ export default function MissionDetailPage() {
           </div>
         </div>
 
-        {/* Mission Submission Form */}
-        {missionStatus.state === 'available' && mission.completion_status === 'not_started' && (
+        {/* Mission Submission Form - Show if available OR in progress */}
+        {(missionStatus.state === 'available' || (missionStatus.state === 'in_progress')) && mission.completion_status !== 'completed' && mission.completion_status !== 'pending_review' && (
           <form onSubmit={handleSubmitMission} className="space-y-4 bg-card border border-border rounded-lg p-4">
             <div>
+              <h3 className="font-bold text-foreground mb-3">Submit Proof of Completion</h3>
               <label className="block text-sm font-medium text-foreground mb-2">
                 {mission.verification_type === 'manual' ? 'Proof of Completion' : 'Submission URL'}
               </label>
@@ -229,9 +230,14 @@ export default function MissionDetailPage() {
                 onChange={(e) => setSubmissionUrl(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
+              <p className="text-xs text-muted-foreground mt-2">
+                {mission.verification_type === 'manual' 
+                  ? 'Submit a link to your proof or a screenshot URL' 
+                  : 'Provide the URL where we can verify your completion'}
+              </p>
             </div>
             {submissionError && (
-              <p className="text-red-500 text-sm">{submissionError}</p>
+              <p className="text-red-500 text-sm font-semibold">{submissionError}</p>
             )}
             <button
               type="submit"
@@ -246,7 +252,7 @@ export default function MissionDetailPage() {
               ) : (
                 <>
                   <Upload size={18} />
-                  Submit Mission
+                  Submit for Review
                 </>
               )}
             </button>

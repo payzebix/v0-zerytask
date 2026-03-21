@@ -86,12 +86,47 @@ export default function ProfileMissionsPage() {
   const allMissions = Array.isArray(missionsData) ? missionsData : []
   const profile = profileData as MissionProfile | undefined
 
-  // Filter missions by type
-  const filteredMissions = allMissions.filter(m => {
-    if (filterType === 'all') return true
-    const isManual = m.verification_type?.toLowerCase() === 'manual'
-    return filterType === 'manual' ? isManual : !isManual
-  })
+  // Organize missions by status
+  const organizeMissionsByStatus = (missions: Mission[]) => {
+    const available: Mission[] = []
+    const inProgress: Mission[] = []
+    const paused: Mission[] = []
+    const completed: Mission[] = []
+
+    missions.forEach(mission => {
+      const status = getMissionStatus(
+        mission.start_date,
+        mission.start_time,
+        mission.end_date,
+        mission.end_time,
+        mission.completion_status
+      )
+
+      if (mission.completion_status === 'completed') {
+        completed.push(mission)
+      } else if (mission.status === 'paused') {
+        paused.push(mission)
+      } else if (status.state === 'available' || status.state === 'in_progress') {
+        if (status.state === 'available') {
+          available.push(mission)
+        } else {
+          inProgress.push(mission)
+        }
+      }
+    })
+
+    return { available, inProgress, paused, completed }
+  }
+
+  // Filter by verification type
+  const filterByType = (missions: Mission[]) => {
+    if (filterType === 'all') return missions
+    const isManual = (m: Mission) => m.verification_type?.toLowerCase() === 'manual'
+    return filterType === 'manual' ? missions.filter(isManual) : missions.filter(m => !isManual(m))
+  }
+
+  const filteredMissions = filterByType(allMissions)
+  const missionsByStatus = organizeMissionsByStatus(filteredMissions)
 
   const manualCount = allMissions.filter(m => m.verification_type?.toLowerCase() === 'manual').length
   const automaticCount = allMissions.length - manualCount
@@ -120,6 +155,67 @@ export default function ProfileMissionsPage() {
 
     return () => clearInterval(interval)
   }, [filteredMissions])
+
+  // Render individual mission card
+  const renderMissionCard = (mission: Mission) => {
+    const status = getMissionStatus(
+      mission.start_date,
+      mission.start_time,
+      mission.end_date,
+      mission.end_time,
+      mission.completion_status
+    )
+
+    const statusIcon = status.state === 'completed' ? (
+      <Check size={16} className="text-green-500" />
+    ) : status.state === 'locked' ? (
+      <Lock size={16} className="text-muted-foreground" />
+    ) : status.state === 'in_progress' ? (
+      <Clock size={16} className="text-yellow-500" />
+    ) : null
+
+    const statusText = status.state === 'completed' ? 'Completed' : status.state === 'locked' ? 'Locked' : status.state === 'in_progress' ? 'Ending soon' : ''
+
+    return (
+      <div
+        key={mission.id}
+        onClick={() => router.push(`/${encodeURIComponent(profile?.name || '')  }/${mission.id}`)}
+        className="bg-card border border-border hover:border-primary/50 rounded-xl p-3 transition cursor-pointer hover:bg-card/80 group"
+      >
+        <div className="flex gap-2 items-start">
+          {mission.image_url && (
+            <img 
+              src={mission.image_url} 
+              alt="mission logo"
+              className="h-6 w-6 rounded object-cover flex-shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none'
+              }}
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-foreground text-sm group-hover:text-primary transition truncate">{mission.title}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-1">{mission.description}</p>
+            <div className="flex gap-2 mt-2 text-xs">
+              <span className="bg-primary/10 text-primary px-2 py-1 rounded">+{mission.xp_reward} XP</span>
+              {mission.zeryt_reward > 0 && (
+                <span className="bg-accent/10 text-accent px-2 py-1 rounded">${mission.zeryt_reward}</span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            {statusIcon && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {statusIcon}
+                <span>{statusText}</span>
+              </div>
+            )}
+            <ChevronRight size={16} className="text-muted-foreground group-hover:text-primary transition" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (authLoading || !user || !profileName) {
     return (
@@ -203,14 +299,69 @@ export default function ProfileMissionsPage() {
         ))}
       </div>
 
-      {/* Missions List */}
-      <div className="px-4 py-6 space-y-3">
+      {/* Missions List - Organized by Status */}
+      <div className="px-4 py-6 space-y-6">
         {filteredMissions.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No missions found</p>
           </div>
         ) : (
-          filteredMissions.map((mission) => {
+          <>
+            {/* Available Missions */}
+            {missionsByStatus.available.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-primary uppercase tracking-wide mb-3">Available Now</h3>
+                <div className="space-y-3">
+                  {missionsByStatus.available.map((mission) => (
+                    renderMissionCard(mission)
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* In Progress Missions */}
+            {missionsByStatus.inProgress.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-accent uppercase tracking-wide mb-3">In Progress</h3>
+                <div className="space-y-3">
+                  {missionsByStatus.inProgress.map((mission) => (
+                    renderMissionCard(mission)
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Paused Missions */}
+            {missionsByStatus.paused.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-yellow-600 uppercase tracking-wide mb-3">Paused</h3>
+                <div className="space-y-3">
+                  {missionsByStatus.paused.map((mission) => (
+                    renderMissionCard(mission)
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Completed Missions */}
+            {missionsByStatus.completed.length > 0 && (
+              <div>
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-3">Completed</h3>
+                <div className="space-y-3 opacity-75">
+                  {missionsByStatus.completed.map((mission) => (
+                    renderMissionCard(mission)
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  // Helper function to render mission card
+  const renderMissionCard = (mission: Mission) => {
             const isManual = mission.verification_type?.toLowerCase() === 'manual'
             const missionStatus = getMissionStatus(
               mission.start_date,
@@ -248,7 +399,7 @@ export default function ProfileMissionsPage() {
                         <img 
                           src={mission.image_url} 
                           alt="mission logo"
-                          className="h-5 w-5 rounded object-cover"
+                          className="h-6 w-6 rounded object-cover flex-shrink-0"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none'
                           }}
@@ -298,9 +449,5 @@ export default function ProfileMissionsPage() {
                 </div>
               </div>
             )
-          })
-        )}
-      </div>
-    </div>
-  )
+  }
 }

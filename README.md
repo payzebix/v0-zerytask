@@ -2,21 +2,48 @@
 
 A comprehensive Web3 missions application where users complete tasks to earn XP and ZeryT tokens. Built on Next.js 16 with Supabase.
 
-**Status:** ✅ Production-Ready (v1.0 - Last Audited: 2025-02-24)
+**Status:** 🟡 Funcional con issues conocidos (v1.0 - Última Auditoría: 2025-02-24)
 
-## 📚 Documentation
+## 🎯 DOCUMENTACIÓN - SELECCIONA SEGÚN TU NECESIDAD
 
-**Start here:** [ZERYTASK_REFERENCE.md](./ZERYTASK_REFERENCE.md) - Central reference guide
-- Complete project structure
+### Para Ejecutivos / Managers:
+📄 **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)** (5 min read)
+- Estado actual del proyecto
+- Issues críticos (RLS, validation, performance)
+- Impacto comercial y recomendaciones
+
+### Para Desarrolladores (ACCIÓN INMEDIATA):
+🔧 **[ACTION_PLAN_IMMEDIATE.md](./ACTION_PLAN_IMMEDIATE.md)** (LEER PRIMERO)
+- 5 fixes críticos con código exacto
+- Timeline: 70 minutos para críticos, 3 horas para todos
+- Checklist de validación post-fixes
+
+### Para Análisis Técnico Detallado:
+🔍 **[ANALYSIS_2025_COMPLETE.md](./ANALYSIS_2025_COMPLETE.md)** (Referencia)
+- 16 tablas de BD auditadas
+- 81+ endpoints API analizados
+- Seguridad, Performance, Arquitectura
+- 10 bugs conocidos con estado
+
+### Documentación General (Referencia):
+📖 **[ZERYTASK_REFERENCE.md](./ZERYTASK_REFERENCE.md)**
+- Estructura del proyecto
 - API endpoints
-- Main workflows
-- Debugging guide
+- Workflows principales
 
-**Full Audit:** [COMPREHENSIVE_AUDIT_2025.md](./COMPREHENSIVE_AUDIT_2025.md) - Detailed analysis
-- Database analysis
-- API route audit
-- Security review
-- Recommendations
+---
+
+## 🐛 ISSUES CRÍTICOS ENCONTRADOS (2025-02-24)
+
+| # | Severidad | Issue | Fix Requerido |
+|---|-----------|-------|---------------|
+| 1 | 🔴 | RLS deshabilitado en admin_config | Ejecutar SQL (5 min) |
+| 2 | 🔴 | Parámetros Next.js 16 no awaited | Audit 5 rutas (30 min) |
+| 3 | 🔴 | UUID validation faltante | Agregar checks (20 min) |
+| 4 | 🟠 | Customization preview no funciona | useEffect + CSS vars (30 min) |
+| 5 | 🟠 | Logo size inconsistente | Unificar a 12x12 (10 min) |
+
+**Ver detalles y fixes:** [ACTION_PLAN_IMMEDIATE.md](./ACTION_PLAN_IMMEDIATE.md)
 
 ## Features
 

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getAdminSupabaseClient } from '@/lib/supabase-admin'
 import { NextRequest, NextResponse } from 'next/server'
 
 interface CustomizationConfig {
@@ -34,7 +35,7 @@ interface CustomizationConfig {
 // GET current customization
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
+    const supabase = getAdminSupabaseClient()
 
     const { data, error } = await supabase
       .from('site_customization')
@@ -64,15 +65,14 @@ export async function GET(request: NextRequest) {
 // UPDATE customization
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-
-    // Verify admin
-    const { data: { user } } = await supabase.auth.getUser()
+    // Verify admin first with auth client
+    const supabaseAuth = await createServerSupabaseClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseAuth
       .from('users')
       .select('is_admin')
       .eq('id', user.id)
@@ -81,6 +81,9 @@ export async function POST(request: NextRequest) {
     if (!userData?.is_admin) {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
+
+    // Use admin client for database operations
+    const supabase = getAdminSupabaseClient()
 
     const body = (await request.json()) as CustomizationConfig
 
@@ -92,18 +95,17 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle()
 
-    // Update customization
+    // Upsert customization (insert if not exists, update if exists)
     const { data, error } = await supabase
       .from('site_customization')
-      .update({
+      .upsert({
+        id: current?.id || undefined, // Keep same ID if updating, generate new if inserting
         ...body,
         previous_version: current || null,
         version_number: (current?.version_number || 0) + 1,
         last_updated_by: user.id,
         updated_at: new Date().toISOString(),
-      })
-      .order('created_at', { ascending: false })
-      .limit(1)
+      }, { onConflict: 'id' })
       .select()
       .single()
 
@@ -128,15 +130,14 @@ export async function POST(request: NextRequest) {
 // RESET to default
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-
-    // Verify admin
-    const { data: { user } } = await supabase.auth.getUser()
+    // Verify admin first
+    const supabaseAuth = await createServerSupabaseClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseAuth
       .from('users')
       .select('is_admin')
       .eq('id', user.id)
@@ -145,6 +146,9 @@ export async function PUT(request: NextRequest) {
     if (!userData?.is_admin) {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
+
+    // Use admin client for operations
+    const supabase = getAdminSupabaseClient()
 
     const defaultConfig = {
       primary_color: '#3b82f6',
@@ -210,15 +214,14 @@ export async function PUT(request: NextRequest) {
 // ROLLBACK to previous version
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-
-    // Verify admin
-    const { data: { user } } = await supabase.auth.getUser()
+    // Verify admin first
+    const supabaseAuth = await createServerSupabaseClient()
+    const { data: { user } } = await supabaseAuth.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseAuth
       .from('users')
       .select('is_admin')
       .eq('id', user.id)
@@ -227,6 +230,9 @@ export async function PATCH(request: NextRequest) {
     if (!userData?.is_admin) {
       return NextResponse.json({ error: 'Admin only' }, { status: 403 })
     }
+
+    // Use admin client for operations
+    const supabase = getAdminSupabaseClient()
 
     // Get current config
     const { data: current } = await supabase

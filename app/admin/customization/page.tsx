@@ -144,13 +144,19 @@ export default function CustomizationPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
+      const data = await res.json()
       if (res.ok) {
+        setFormData(data) // Update form with saved data
         setMessage('Changes saved successfully!')
-        refetchConfig()
+        // Trigger SWR refetch
+        refetchConfig(data, false)
         setTimeout(() => setMessage(''), 3000)
       } else {
-        setMessage('Error saving changes')
+        setMessage(data.error || 'Error saving changes')
       }
+    } catch (err) {
+      setMessage('Failed to save changes')
+      console.error('[v0] Save error:', err)
     } finally {
       setIsSaving(false)
     }
